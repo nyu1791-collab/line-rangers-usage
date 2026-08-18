@@ -88,6 +88,17 @@
             color: var(--muted-color);
             padding: 20px 0;
         }
+        #debugBox {
+            margin-top: 16px;
+            padding: 12px;
+            background: #450a0a;
+            color: #fecaca;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            white-space: pre-wrap;
+            word-break: break-all;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -101,16 +112,28 @@
                 <div class="loading">データを読み込み中...</div>
             </div>
         </main>
+
+        <div id="debugBox"></div>
     </div>
 
     <script>
-        // スマホの強烈なキャッシュを回避するためタイムスタンプを付与
+        window.onerror = function(message, source, lineno, colno, error) {
+            var box = document.getElementById('debugBox');
+            box.style.display = 'block';
+            box.textContent = 'JSエラー: ' + message + '\n' +
+                'source: ' + source + '\n' +
+                'line: ' + lineno + ' col: ' + colno;
+            return false;
+        };
+    </script>
+
+    <script>
         const jsonUrl = './data/current.json?t=' + new Date().getTime();
 
         fetch(jsonUrl, { cache: 'no-store' })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(`HTTPエラー (${response.status})`);
+                    throw new Error('HTTPエラー (' + response.status + ')');
                 }
                 return response.json();
             })
@@ -119,40 +142,19 @@
                 let html = '<div class="card">';
 
                 if (data.updated_at) {
-                    html += `
-                        <div class="info-item">
-                            <span class="label">最終更新</span>
-                            <span class="value">${data.updated_at}</span>
-                        </div>
-                    `;
+                    html += '<div class="info-item"><span class="label">最終更新</span><span class="value">' + data.updated_at + '</span></div>';
                 }
                 if (data.status) {
-                    html += `
-                        <div class="info-item">
-                            <span class="label">ステータス</span>
-                            <span class="value"><span class="status-badge">${data.status}</span></span>
-                        </div>
-                    `;
+                    html += '<div class="info-item"><span class="label">ステータス</span><span class="value"><span class="status-badge">' + data.status + '</span></span></div>';
                 }
                 if (data.details) {
-                    html += `
-                        <div class="info-item">
-                            <span class="label">詳細</span>
-                            <span class="value">${data.details}</span>
-                        </div>
-                    `;
+                    html += '<div class="info-item"><span class="label">詳細</span><span class="value">' + data.details + '</span></div>';
                 }
 
-                // その他の追加データが存在する場合も自動取得して表示
                 Object.keys(data).forEach(key => {
                     if (!['updated_at', 'status', 'details'].includes(key)) {
                         const val = typeof data[key] === 'object' ? JSON.stringify(data[key], null, 2) : data[key];
-                        html += `
-                            <div class="info-item">
-                                <span class="label">${key}</span>
-                                <span class="value">${val}</span>
-                            </div>
-                        `;
+                        html += '<div class="info-item"><span class="label">' + key + '</span><span class="value">' + val + '</span></div>';
                     }
                 });
 
@@ -161,6 +163,12 @@
             })
             .catch(error => {
                 const app = document.getElementById('app');
-                app.innerHTML = `
-                    <div class="error">
-                        
+                app.innerHTML = '<div class="error"><strong>データの読み込みに失敗しました</strong><br><br>' + error.message + '<br><br><small>※ ./data/current.json の配置を確認してください</small></div>';
+
+                var box = document.getElementById('debugBox');
+                box.style.display = 'block';
+                box.textContent = 'catchエラー: ' + error.message + '\n' + (error.stack || '');
+            });
+    </script>
+</body>
+</html>
