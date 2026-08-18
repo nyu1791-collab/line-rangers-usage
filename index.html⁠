@@ -2,26 +2,25 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>LINEレンジャー 使用率</title>
+    <title>LINEレンジャー 使用率 デバッグ</title>
 </head>
 <body>
-    <h1>LINEレンジャー 使用率チェッカー</h1>
-    <div id="content">データを読み込み中...</div>
+    <h1>LINEレンジャー 使用率チェッカー（デバッグ）</h1>
+    <pre id="output" style="background: #f4f4f4; padding: 10px; border-radius: 5px;">読み込み中...</pre>
 
     <script>
-        fetch('./data/current.json')
-            .then(response => response.json())
+        fetch('data/current.json')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('ファイルの取得に失敗しました (HTTPステータス: ' + response.status + ')');
+                }
+                return response.json();
+            })
             .then(data => {
-                const contentDiv = document.getElementById('content');
-                contentDiv.innerHTML = `
-                    <p>最終更新: ${data.updated_at}</p>
-                    <p>ステータス: ${data.status}</p>
-                    <p>詳細: ${data.details}</p>
-                `;
+                document.getElementById('output').textContent = JSON.stringify(data, null, 2);
             })
             .catch(error => {
-                document.getElementById('content').innerText = 'データの読み込みに失敗しました。';
-                console.error(error);
+                document.getElementById('output').textContent = 'エラー: ' + error.message;
             });
     </script>
 </body>
